@@ -32,8 +32,8 @@ namespace ZombieRun
             hit = Tone("hit", 0.5f, 180f, 40f, 0.5f, 0.8f);
             start = Tone("start", 0.4f, 300f, 900f, 0.18f, 0f);
             select = Tone("select", 0.08f, 700f, 900f, 0.12f, 0f);
-            growl = Growl("growl", 1.2f, 70f, 0.35f);
-            scream = Growl("scream", 0.9f, 140f, 0.3f);
+            growl = Growl("growl", 1.3f, 65f, 0.32f);
+            scream = Growl("scream", 0.9f, 150f, 0.3f, 0.09f);
             staticNoise = Static("static", 0.45f);
             siren = Siren("siren", 4.5f);
             power = Tone("power", 0.45f, 500f, 1500f, 0.22f, 0f);
@@ -74,7 +74,7 @@ namespace ZombieRun
         public void Hit() => fx.PlayOneShot(hit);
         public void StartRun() { fx.PlayOneShot(start); fx.PlayOneShot(growl, 0.8f); }
         public void Select() => fx.PlayOneShot(select);
-        public void Growl() => fx.PlayOneShot(growl, 0.7f);
+        public void Growl() => fx.PlayOneShot(growl, 0.6f);
         public void Scream() => fx.PlayOneShot(scream, 0.6f);
         public void ScreamFar() => fx.PlayOneShot(scream, 0.25f);
         /// <summary>Grésillement de radio (transmissions, indices).</summary>
@@ -105,22 +105,27 @@ namespace ZombieRun
             return c;
         }
 
-        static AudioClip Growl(string name, float dur, float f, float vol)
+        /// <summary>Grognement grave et doux : dent de scie + souffle, filtrés pour enlever les aigus qui font mal aux oreilles.</summary>
+        static AudioClip Growl(string name, float dur, float f, float vol, float bright = 0.05f)
         {
             int n = Mathf.CeilToInt(Rate * dur);
             var d = new float[n];
             var rng = new System.Random(9);
-            float ph = 0f, lp = 0f;
+            float ph = 0f, s1 = 0f, s2 = 0f, n1 = 0f, n2 = 0f, peak = 0.0001f;
             for (int i = 0; i < n; i++)
             {
                 float t = (float)i / n;
-                float freq = f * (1f + 0.25f * Mathf.Sin(t * 18f) + 0.1f * Mathf.Sin(t * 53f));
-                ph += 2f * Mathf.PI * freq / Rate;
-                float saw = (ph / Mathf.PI) % 2f - 1f;
-                lp = Mathf.Lerp(lp, (float)(rng.NextDouble() * 2 - 1), 0.08f);
-                float env = Mathf.Sin(Mathf.PI * t);
-                d[i] = (saw * 0.6f + lp * 1.4f) * env * vol;
+                float freq = f * (1f + 0.12f * Mathf.Sin(t * 9f) + 0.05f * Mathf.Sin(t * 31f));
+                ph = (ph + freq / Rate) % 1f;
+                float saw = ph * 2f - 1f;
+                // filtres passe-bas (2 étages) : son rond, sans grésillement
+                s1 = Mathf.Lerp(s1, saw, bright); s2 = Mathf.Lerp(s2, s1, bright);
+                n1 = Mathf.Lerp(n1, (float)(rng.NextDouble() * 2 - 1), 0.025f); n2 = Mathf.Lerp(n2, n1, 0.025f);
+                float env = Mathf.Sin(Mathf.PI * t); env *= env;
+                d[i] = (s2 + n2 * 2.5f) * env;
+                peak = Mathf.Max(peak, Mathf.Abs(d[i]));
             }
+            for (int i = 0; i < n; i++) d[i] = d[i] / peak * vol;   // volume maîtrisé, jamais de pic
             var c = AudioClip.Create(name, n, 1, Rate, false);
             c.SetData(d, 0);
             return c;

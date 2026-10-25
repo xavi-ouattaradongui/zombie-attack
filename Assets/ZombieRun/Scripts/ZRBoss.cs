@@ -72,7 +72,7 @@ namespace ZombieRun
             phase = Phase.Enter;
             timer = 0f;
             ahead = 46f; x = 0f; yaw = 180f; turned = true;
-            attacksLeft = 3 + Mathf.Min(round, 3);
+            attacksLeft = 5 + Mathf.Min(round, 3);   // 5 coups au premier Colosse, jusqu'à 8 ensuite
             attackIndex = 0;
             JustDefeated = false;
             body.gameObject.SetActive(true);

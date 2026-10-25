@@ -379,7 +379,7 @@ namespace ZombieRun
             ui.SetScore(Score, coins, horde.Close && stateTime > 3f);
 
             growlTimer -= dt;
-            if (growlTimer <= 0f) { sfx.Growl(); growlTimer = horde.Close ? 1.5f : Random.Range(5f, 9f); }
+            if (growlTimer <= 0f) { sfx.Growl(); growlTimer = horde.Close ? 3f : Random.Range(8f, 13f); }
 
             var swept = new Bounds(b.center - new Vector3(0f, 0f, dz * 0.5f), b.size + new Vector3(0f, 0f, dz));
             if (reviveGrace > 0f) reviveGrace -= dt;

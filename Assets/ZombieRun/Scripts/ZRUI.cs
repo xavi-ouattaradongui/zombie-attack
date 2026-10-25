@@ -125,8 +125,8 @@ namespace ZombieRun
             // ---------- En course ----------
             hud = Panel("HUD", null);
             score = T(Label(hud.transform, "0", 110, Color.white, new Vector2(0f, 1f), new Vector2(60f, -50f), new Vector2(700f, 130f), Purple, TextAnchor.UpperLeft));
-            coinsText = T(Label(hud.transform, "0", 80, new Color(1f, 0.82f, 0.25f), new Vector2(1f, 1f), new Vector2(-140f, -60f), new Vector2(600f, 110f), Purple, TextAnchor.UpperRight));
-            CoinIcon(hud.transform, new Vector2(-70f, -108f), 64f);
+            coinsText = T(Label(hud.transform, "0", 80, new Color(1f, 0.82f, 0.25f), new Vector2(1f, 1f), new Vector2(-140f, -195f), new Vector2(600f, 110f), Purple, TextAnchor.UpperRight));
+            CoinIcon(hud.transform, new Vector2(-70f, -243f), 64f);
             warning = T(Label(hud.transform, "LES ZOMBIES SONT LÀ !", 76, Blood, top, new Vector2(0f, -220f), new Vector2(1100f, 100f), Ink));
             BuildPause(center, bottom);
 
@@ -1064,12 +1064,12 @@ namespace ZombieRun
 
         void BuildPause(Vector2 center, Vector2 bottom)
         {
-            // Bouton pause en haut à droite, sous les pièces
+            // Bouton pause tout en haut à droite, au-dessus des pièces
             var go = new GameObject("Bouton pause", typeof(RectTransform));
             go.transform.SetParent(hud.transform, false);
             pauseBtn = (RectTransform)go.transform;
             pauseBtn.anchorMin = pauseBtn.anchorMax = new Vector2(1f, 1f); pauseBtn.pivot = new Vector2(0.5f, 0.5f);
-            pauseBtn.sizeDelta = new Vector2(130f, 130f); pauseBtn.anchoredPosition = new Vector2(-95f, -250f);
+            pauseBtn.sizeDelta = new Vector2(120f, 120f); pauseBtn.anchoredPosition = new Vector2(-90f, -100f);
             if (A("TileBlank") != null) SlicedArt(pauseBtn, A("TileBlank"));
             else { Child(pauseBtn, "Bord", new Color(0.3f, 0.3f, 0.36f), Vector2.zero, new Vector2(10f, 10f)); Child(pauseBtn, "Fond", new Color(0.1f, 0.11f, 0.15f, 0.96f), Vector2.zero, Vector2.zero); }
             for (int i = 0; i < 2; i++)
