@@ -177,6 +177,7 @@ namespace ZombieRun
             nextRowZ = 45f;
             clock = 0f;
             SpawnPaused = false;
+            DoubleCoins = false;
         }
 
         public void Tick(float pz, float difficulty, float dt)
@@ -209,7 +210,12 @@ namespace ZombieRun
             {
                 var c = coins[i];
                 if (c.pos.z < pz - 10f) { c.go.SetActive(false); coinPool.Push(c.go); coins.RemoveAt(i); continue; }
-                if (!c.taken) c.go.transform.rotation = Quaternion.Euler(90f, spin + c.pos.z * 10f, 0f);
+                if (!c.taken)
+                {
+                    c.go.transform.rotation = Quaternion.Euler(90f, spin + c.pos.z * 10f, 0f);
+                    var twin = c.go.transform.GetChild(0).gameObject;
+                    if (twin.activeSelf != DoubleCoins) twin.SetActive(DoubleCoins);
+                }
             }
 
             // Lampadaires qui grésillent
@@ -254,6 +260,9 @@ namespace ZombieRun
 
             ground.position = new Vector3(0f, -0.05f, pz + 150f);
         }
+
+        /// <summary>Bonus PIÈCES x2 actif : chaque pièce de la route apparaît en double.</summary>
+        public bool DoubleCoins { get; set; }
 
         /// <summary>Plus d'obstacles pendant un moment (combat de boss).</summary>
         public bool SpawnPaused { get; set; }
@@ -823,7 +832,16 @@ namespace ZombieRun
                 var r = go.AddComponent<MeshRenderer>();
                 r.sharedMaterial = coinMat;
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                // Deuxième pièce collée à la première : visible seulement avec le bonus PIÈCES x2
+                var twin = new GameObject("Pièce double");
+                twin.transform.SetParent(go.transform, false);
+                twin.transform.localPosition = new Vector3(0.62f, -1.2f, 0.35f);
+                twin.AddComponent<MeshFilter>().sharedMesh = coinMesh;
+                var tr = twin.AddComponent<MeshRenderer>();
+                tr.sharedMaterial = coinMat;
+                tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
+            go.transform.GetChild(0).gameObject.SetActive(DoubleCoins);
             go.SetActive(true);
             go.transform.position = pos;
             coins.Add(new Coin { go = go, pos = pos });

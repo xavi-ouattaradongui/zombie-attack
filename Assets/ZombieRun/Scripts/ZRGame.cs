@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ZombieRun
@@ -142,6 +143,8 @@ namespace ZombieRun
             nextPowerAt = Random.Range(160f, 260f);
             if (player != null) player.JumpBoost = 1f;
             if (shieldFx != null) shieldFx.gameObject.SetActive(false);
+            if (magnetFx != null) { magnetFx.gameObject.SetActive(false); jumpFx.gameObject.SetActive(false); }
+            if (world != null) world.DoubleCoins = false;
             stateTime = 0f; overDelay = -1f; invulnerable = 0f; slowdown = 0f;
             growlTimer = 4f;
             if (boss != null) boss.Stop();
@@ -422,6 +425,7 @@ namespace ZombieRun
             sfx.Growl();
             ui.Flash();
             ui.ShowPauseButton(false);
+            if (magnetFx != null) { magnetFx.gameObject.SetActive(false); jumpFx.gameObject.SetActive(false); }
             stateTime = 0f;
             // Seconde chance si on a de quoi payer (25, puis 50, 100, 200…)
             if (Wallet >= ChanceCost) { state = GameState.SecondChance; chanceTimer = ChanceTime; chanceShown = false; }
@@ -674,7 +678,9 @@ namespace ZombieRun
             shield = Mathf.Max(0f, shield - dt);
             player.JumpBoost = jumpBoost > 0f ? 1.3f : 1f;
             if (magnet > 0f) world.AttractCoins(center, 12f, dt);
+            world.DoubleCoins = doubleCoins > 0f;
             ShieldVisual(dt);
+            PowerVisuals();
             ui.SetPowers(magnet / powerMax[0], shield / powerMax[1], jumpBoost / powerMax[2], doubleCoins / powerMax[3]);
         }
 
@@ -689,6 +695,77 @@ namespace ZombieRun
             rig.Shake(0.2f);
             ui.PowerToast("BOUCLIER BRISÉ !", ZRWorld.PowerColors[1]);
             return true;
+        }
+
+        // ---------- Rappels visuels des super objets sur le perso ----------
+        Transform magnetFx, jumpFx;
+        readonly List<Transform> jumpRings = new List<Transform>();
+
+        static Material Glow(Color c, float power)
+        {
+            var sh = Shader.Find("Universal Render Pipeline/Lit");
+            var m = new Material(sh != null ? sh : Shader.Find("Standard"));
+            m.SetColor("_BaseColor", c);
+            m.EnableKeyword("_EMISSION");
+            m.SetColor("_EmissionColor", c * power);
+            return m;
+        }
+
+        /// <summary>Aimant qui flotte au-dessus de la tête, anneaux verts aux pieds pour le super saut.</summary>
+        void PowerVisuals()
+        {
+            if (magnetFx == null)
+            {
+                magnetFx = new GameObject("Aimant sur la tête").transform;
+                magnetFx.SetParent(player.transform, false);
+                var red = Glow(new Color(0.95f, 0.15f, 0.12f), 1.6f);
+                var steel = Glow(new Color(0.85f, 0.88f, 0.95f), 0.8f);
+                // Un aimant en U, pointes vers le bas
+                ZRBuild.Box("Haut", magnetFx, red, new Vector3(0f, 0.16f, 0f), new Vector3(0.42f, 0.11f, 0.11f));
+                ZRBuild.Box("Branche", magnetFx, red, new Vector3(-0.155f, 0.02f, 0f), new Vector3(0.11f, 0.26f, 0.11f));
+                ZRBuild.Box("Branche", magnetFx, red, new Vector3(0.155f, 0.02f, 0f), new Vector3(0.11f, 0.26f, 0.11f));
+                ZRBuild.Box("Pointe", magnetFx, steel, new Vector3(-0.155f, -0.15f, 0f), new Vector3(0.115f, 0.1f, 0.115f));
+                ZRBuild.Box("Pointe", magnetFx, steel, new Vector3(0.155f, -0.15f, 0f), new Vector3(0.115f, 0.1f, 0.115f));
+                var l = new GameObject("Lueur").AddComponent<Light>();
+                l.transform.SetParent(magnetFx, false);
+                l.type = LightType.Point; l.range = 2.5f; l.intensity = 2f; l.color = new Color(1f, 0.3f, 0.25f);
+
+                jumpFx = new GameObject("Super saut aux pieds").transform;
+                jumpFx.SetParent(player.transform, false);
+                var green = Glow(ZRWorld.PowerColors[2], 3f);
+                for (int r = 0; r < 2; r++)
+                {
+                    var ring = new GameObject("Anneau").transform;
+                    ring.SetParent(jumpFx, false);
+                    for (int i = 0; i < 12; i++)
+                    {
+                        float a = i * Mathf.PI * 2f / 12f;
+                        ZRBuild.Box("Éclat", ring, green, new Vector3(Mathf.Cos(a) * 0.45f, 0f, Mathf.Sin(a) * 0.45f), new Vector3(0.16f, 0.04f, 0.07f), new Vector3(0f, -a * Mathf.Rad2Deg - 90f, 0f));
+                    }
+                    jumpRings.Add(ring);
+                }
+            }
+            float t = Time.time;
+            // Clignote les 2 dernières secondes pour prévenir que ça s'arrête
+            bool magnetOn = magnet > 0f && (magnet > 2f || Mathf.Sin(t * 20f) > 0f);
+            magnetFx.gameObject.SetActive(magnetOn);
+            if (magnetOn)
+            {
+                float top = player.GetBounds().max.y - player.Y;
+                magnetFx.localPosition = new Vector3(0f, top + 0.25f + Mathf.Sin(t * 4f) * 0.05f, 0f);
+                magnetFx.localRotation = Quaternion.Euler(0f, t * 90f, Mathf.Sin(t * 3f) * 8f);
+            }
+            bool jumpOn = jumpBoost > 0f && (jumpBoost > 2f || Mathf.Sin(t * 20f) > 0f);
+            jumpFx.gameObject.SetActive(jumpOn);
+            if (jumpOn)
+                for (int r = 0; r < jumpRings.Count; r++)
+                {
+                    // Les anneaux montent le long des jambes en boucle, comme des ressorts
+                    float k = Mathf.Repeat(t * 1.4f + r * 0.5f, 1f);
+                    jumpRings[r].localPosition = new Vector3(0f, 0.05f + k * 0.55f, 0f);
+                    jumpRings[r].localScale = Vector3.one * Mathf.Lerp(1.15f, 0.6f, k);
+                    jumpRings[r].localRotation = Quaternion.Euler(0f, t * 120f, 0f);
+                }
         }
 
         void ShieldVisual(float dt)
