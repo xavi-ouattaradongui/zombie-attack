@@ -1,0 +1,16 @@
+ZOMBIE ATTACK - projet Unity indépendant (Unity 6.3 LTS, 6000.3.27f1, URP)
+
+AVANT D'OUVRIR :
+Copie ces 2 fichiers (trop gros pour Claude) depuis l'ancien projet "jeu unity" :
+  jeu unity/Assets/ZombieRun/Characters/Runners/Timmy.fbx
+  jeu unity/Assets/ZombieRun/Characters/Runners/Doozy.fbx
+vers :
+  Zombie Attack/Assets/ZombieRun/Characters/Runners/
+
+OUVRIR :
+1. Unity Hub > Add > Add project from disk > choisis le dossier "Zombie Attack".
+2. Ouvre-le avec Unity 6000.3.27f1 (le premier chargement prend quelques minutes).
+3. Menu Zombie Run > Créer la scène Zombie Run, puis Play.
+
+Crédits : décors Kenney (CC0), personnages et animations Mixamo,
+polices Bangers et Lilita One (licence SIL OFL, voir UI/Fonts).

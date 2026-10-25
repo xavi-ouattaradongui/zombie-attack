@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b0614">
+  <meta name="description" content="Zombie Attack : cours, esquive et survis à la horde. Un jeu de course infinie fait avec Unity.">
+  <meta property="og:title" content="Zombie Attack">
+  <meta property="og:description" content="Cours, esquive et survis à la horde !">
+  <meta property="og:image" content="logo.png">
+  <title>{{{ PRODUCT_NAME }}}</title>
+  <link rel="icon" href="thumbnail.png">
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0b0614; overflow: hidden; overscroll-behavior: none; }
+    body { height: 100dvh; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #fff; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    #jeu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+    /* Sur ordinateur, le jeu garde le format d'un téléphone (portrait) */
+    #unity-canvas { width: 100%; height: 100%; max-width: calc(100dvh * 9 / 16); display: block; background: #0b0614; touch-action: none; outline: none; }
+    #chargement { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vh;
+      background: #0b0614 url("fond.jpg") center / cover no-repeat; transition: opacity .5s; }
+    #chargement::before { content: ""; position: absolute; inset: 0; background: rgba(5, 0, 12, .45); }
+    #logo { position: relative; width: min(80vw, 46dvh); filter: drop-shadow(0 10px 20px rgba(0,0,0,.6)); animation: respire 2.4s ease-in-out infinite; }
+    #barre { position: relative; width: min(70vw, 40dvh); height: 22px; border-radius: 12px; background: rgba(0,0,0,.65); border: 3px solid #2a1840; overflow: hidden; }
+    #remplissage { width: 0%; height: 100%; background: linear-gradient(90deg, #6fe01a, #b6ff3c); border-radius: 8px; transition: width .2s; }
+    #texte { position: relative; font-weight: 800; letter-spacing: .08em; text-shadow: 0 3px 0 #000; font-size: clamp(14px, 2.2dvh, 22px); }
+    #erreur { display: none; position: relative; max-width: 80vw; text-align: center; background: rgba(0,0,0,.7); padding: 12px 16px; border-radius: 12px; }
+    @keyframes respire { 50% { transform: scale(1.04) rotate(-1deg); } }
+  </style>
+</head>
+<body>
+  <div id="jeu"><canvas id="unity-canvas" tabindex="-1"></canvas></div>
+  <div id="chargement">
+    <img id="logo" src="logo.png" alt="Zombie Attack">
+    <div id="barre"><div id="remplissage"></div></div>
+    <div id="texte">CHARGEMENT…</div>
+    <div id="erreur"></div>
+  </div>
+  <script>
+    var canvas = document.querySelector("#unity-canvas");
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+    var config = {
+      arguments: [],
+      dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+      frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+      workerUrl: buildUrl + "/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+      codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+      symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+      productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+      productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+      // Sur téléphone : résolution un peu réduite pour rester fluide
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1.5 : 2),
+      showBanner: function (msg, type) { if (type === "error") montrerErreur(msg); }
+    };
+
+    function montrerErreur(msg) {
+      var e = document.querySelector("#erreur");
+      e.style.display = "block";
+      e.textContent = "Oups, le jeu n'a pas pu démarrer : " + msg;
+    }
+
+    // Empêche le zoom et le défilement de la page pendant les glissements de doigt
+    document.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener("gesturestart", function (e) { e.preventDefault(); });
+
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (p) {
+        document.querySelector("#remplissage").style.width = Math.round(p * 100) + "%";
+        document.querySelector("#texte").textContent = "CHARGEMENT… " + Math.round(p * 100) + " %";
+      }).then(function () {
+        var c = document.querySelector("#chargement");
+        c.style.opacity = "0";
+        setTimeout(function () { c.remove(); }, 600);
+        canvas.focus();
+      }).catch(function (message) { montrerErreur(message); });
+    };
+    script.onerror = function () { montrerErreur("fichiers introuvables."); };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
